@@ -15,7 +15,7 @@ const promisify = (inner) => new Promise((resolve, reject) =>
   })
 );
 const getBalance = (account, at) => promisify(cb => web3.eth.getBalance(account, at, cb));
-const timeout = ms => new Promise(res => setTimeout(res, ms))
+const timeout = ms => new Promise(res => setTimeout(res, ms));
 
 /**************************************
 * Contract
@@ -23,6 +23,9 @@ const timeout = ms => new Promise(res => setTimeout(res, ms))
 contract('DAC', function(accounts) {
   
   let dac, token;
+  
+  const transfers = [];
+  
   const owner = accounts[0];
   const rand1 = accounts[1];
   const rand2 = accounts[2];
@@ -32,12 +35,20 @@ contract('DAC', function(accounts) {
   it('DAC should be deployed', async function() {
     dac = await DAC.deployed();
     assert(dac !== undefined, 'DAC is undefined');
+    
   });
   
   it('should create token', async function() {
     const tx = await dac.createToken();
     const address = await dac.token.call();
     token = await TitleToken.at(address);
+    
+    /**************************************
+    * How to listen for events
+    **************************************/
+    token.Transfer({fromBlock: "latest"}).watch((err, res) => transfers.push(res.args));
+
+
     assert(token !== undefined, 'no token');
   });
   
@@ -48,10 +59,8 @@ contract('DAC', function(accounts) {
     assert(projects.length === 1, 'wrong amount of projects');
   });
   
-  it('Owner should mint some and transfer to rand1', async function() {
-    const tx = await token.mint(mill, rand1, { from: owner });
-    
-    console.log(tx.logs[0].args);
+  it('rand1 donates and DAC mints and transfers', async function() {
+    const tx = await dac.send(mill, { from: rand1 });
     
     const totalSupply = (await token.totalSupply.call()).toNumber();
     assert(totalSupply === mill, 'totalSupply wrong');
@@ -62,9 +71,11 @@ contract('DAC', function(accounts) {
   
   it('Portion of title sent to project', async function() {
     const projects = await dac.getProjects.call();
-    const tx = await token.transfer(projects[0], 0, mill / 2, { from: rand1 });
+    const tx = await dac.transfer(projects[0], 0, mill / 2, { from: owner });
     
-    console.log(tx.logs[0].args);
+    await timeout(500);
+    
+    assert(transfers.length === 1, 'event should be listened for...');
   });
   
 });
