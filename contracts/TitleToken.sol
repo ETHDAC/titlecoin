@@ -14,12 +14,12 @@ contract TitleToken is Ownable {
   /**************************************
   * Events
   **************************************/
-  event Transfer(uint256 title, uint256 a, uint256 b);
+  event Transfer(uint256 title, uint256 a, uint256 b, address addressA, address addressB);
+  event Origin(uint256 title, address origin);
   
   //TitleToken Stuff
   uint256 public totalSupply;
   uint256 public titleCount;
-  mapping(address => uint256) title;
   mapping(uint256 => Title) titleData;
   
   struct Title {
@@ -33,12 +33,13 @@ contract TitleToken is Ownable {
   }
   
   function mint(uint256 _amount, address _to) onlyOwner {
-    allocate(_amount, _to);
+    uint256 title = allocate(_amount, _to);
+    Origin(title, _to);
     totalSupply += _amount;
   }
   
   function allocate(uint256 _amount, address _to) returns (uint256) {
-    titleData[titleCount] = Title(_amount, msg.sender, true);
+    titleData[titleCount] = Title(_amount, _to, true);
     titleCount++;
     return titleCount - 1;
   }
@@ -56,7 +57,7 @@ contract TitleToken is Ownable {
     uint256 b = allocate(remainder, owner);
     
     //transfer titles
-    Transfer(_title, a, b);
+    Transfer(_title, a, b, _to, owner);
     
     //invalidate this title
     titleData[_title].active = false;

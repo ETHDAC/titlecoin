@@ -40,6 +40,9 @@ contract('TitleToken', function(accounts) {
   
   it('Owner should mint some and transfer to rand1', async function() {
     const tx = await token.mint(mill, rand1);
+    
+    console.log(tx.logs[0].args);
+    
     const totalSupply = (await token.totalSupply.call()).toNumber();
     assert(totalSupply === mill, 'totalSupply wrong');
     
@@ -48,14 +51,13 @@ contract('TitleToken', function(accounts) {
   });
   
   it('Portion of title can be transferred', async function() {
-    const tx = await token.transfer(rand2, 0, mill / 2, { from: owner });
+    const tx = await token.transfer(rand2, 0, mill / 2, { from: rand1 });
     
-    console.log(tx);
     console.log(tx.logs[0].args);
   });
   
   it('Portion of portion can be transferred', async function() {
-    const tx = await token.transfer(rand3, 1, mill / 4, { from: owner });
+    const tx = await token.transfer(rand3, 1, mill / 4, { from: rand2 });
 
     console.log(tx.logs[0].args);
   });
